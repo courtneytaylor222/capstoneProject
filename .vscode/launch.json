@@ -1,7 +1,15 @@
 {
   "version": "0.2.0",
   "configurations": [
-    
+    {
+      "name": "Debug Chat App",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/myChat",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "C/C++: clang++ build chat app with Boost and OpenSSL"
+    },
     {
       "name": "C/C++ Runner: Debug Session",
       "type": "lldb",

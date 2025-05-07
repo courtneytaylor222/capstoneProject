@@ -3,15 +3,21 @@
     {
       "name": "macos-clang-x64",
       "includePath": [
-        "${workspaceFolder}/**"
+        "${workspaceFolder}/**",
+        "/usr/local/opt/boost/include",
+        "/usr/local/opt/openssl@3/include/openssl",
+        "/usr/local/opt/openssl@3/include/",
+        "${workspaceFolder}"
       ],
-      "compilerPath": "/usr/bin/clang",
-      "cStandard": "${default}",
-      "cppStandard": "${default}",
-      "intelliSenseMode": "macos-clang-x64",
-      "compilerArgs": [
-        ""
-      ]
+      "defines":[],
+      "macFrameworkPath": [],
+      "compilerPath": "/usr/bin/clang++",
+      "cStandard": "c11",
+      "cppStandard": "c++11",
+      "intelliSenseMode": "macos-clang-x64"
+      
+      
+
     }
   ],
   "version": 4
