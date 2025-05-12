@@ -8,10 +8,10 @@
 ChatSession menu(){
     std::cout << "Welcome to myChat!" << '\n';
     std::cout << "The following conversations will be encrypted. " << '\n';
-    std::cout << "Select one of the following options: " << '\n';
-    std::cout << "1. Enter as the server peer \(first on\). " << '\n';
-    std::cout << "2. Enter as the client peer \(second on\). " << '\n';
-    std::cout << "Otherwise, type EXIT to end the encrypted chat at any time. " << '\n';
+    std::cout << "Select one of the following options: \n";
+    std::cout << "1. Enter as the server peer (first on). \n";
+    std::cout << "2. Enter as the client peer (second on). \n";
+    std::cout << "Otherwise, type EXIT to end the encrypted chat at any time. \n";
     
     std::string input;
     std::cin >> input;
@@ -26,6 +26,7 @@ ChatSession menu(){
     //if getLine() was used, it wouldn't return and empty string
 
     //Handles exit command
+    //HELPER FUNCTION???????
     if (input == "EXIT" || input == "exit"){
         std::cout << "Exiting program... \n";
         std::exit(0);

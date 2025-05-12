@@ -12,12 +12,13 @@ class Connection{
 //functions will be called by other parts of the program eg main()    
 public:
     // Constructor
-    Connection(boost::asio::io_context& io_context, boost::asio::ssl::context& ssl_context);
+    Connection(boost::asio::io_context& io_context);
     
+
     //Connect to a peer (client-side)
     void connect(const std::string& ip, int port_number); 
     //function declaration of the connection taking ip address by const reference and port as parameters
-    //TriesYe to connect to another user by IP and port
+    //Tries to connect to another user by IP and port
     //used when your app is the client
 
     void listen(int port_number);
@@ -25,6 +26,10 @@ public:
 
     boost::asio::ip::tcp::socket& getSocket();
     //returns the actual socket so other parts of the program (SSL) can use it
+
+    void sendMessage(const std::string& message);
+    
+    std::string receiveMessage();
 
 private:
     boost::asio::io_context& io_context_;
