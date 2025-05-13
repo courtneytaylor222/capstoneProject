@@ -98,7 +98,19 @@ int main()
         if (outgoingMessage == "EXIT" || outgoingMessage == "exit"){
             std::cout << "Exiting chat... \n";
             conn.sendMessage("EXIT\n");
-            conn.getSocket().close();
+
+            boost::system::error_code ec;
+
+            conn.getSocket().shutdown(ec);
+            if(ec){
+                std::cerr << "SSL shutdown failed: " << ec.what() << std::endl;
+            }
+            
+            conn.getSocket().lowest_layer().close(ec);
+            if(ec){
+                std::cerr << "Socket close failed: " << ec.what() << std::endl;
+            }
+
             running = false;
             break;
         }
@@ -114,7 +126,7 @@ int main()
     }
 
 
-    std::cout << "Exiting chat... \n";
+    //std::cout << "Exiting chat... \n";
 
 
 

@@ -11,14 +11,34 @@
 //passing io_context by reference as it must be managed outside the class
 //initialising a socket using same io context
 //acceptor using same io context
+//ssl_context_(...): Chooses TLS version (v1.2 here).
+//ssl_socket_(...): Creates a socket that uses this SSL context.
+//set_options(...): Adds common options to make SSL safer and compatible.
+//use_certificate_chain_file(...): Loads your certificate (cert.pem).
+//use_private_key_file(...): Loads your private key (key.pem) that proves you're the owner of the certificate.
 Connection::Connection(boost::asio::io_context& io_context)
-    :socket_(io_context), acceptor_(io_context) , io_context_(io_context){}
+    :socket_(io_context),
+    acceptor_(io_context) , 
+    io_context_(io_context),
+    ssl_context(boost::asio::ssl::context::tlsv12),
+    ssl_socket(io_context, ssl_context)
+{
+    ssl_context.set_options(
+        boost::asio::ssl::context::default_workarounds |
+        boost::asio::ssl::context::no_sslv2 |
+        boost::asio::ssl::context::single_dh_use
+    );
+
+    ssl_context.use_certificate_chain_file("cert.pem");
+    ssl_context.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
+
+}
 
     //constructor body (if needed) can go here
 
     //getter for the socket
-boost::asio::ip::tcp::socket& Connection::getSocket(){
-    return socket_;
+boost::asio::ssl::stream<boost::asio::ip::tcp::socket>& Connection::getSocket(){
+    return ssl_socket;
 }
 
 //connect() implementation, member function of Connection class
@@ -30,7 +50,8 @@ boost::asio::ip::tcp::socket& Connection::getSocket(){
 void Connection::connect(const std::string& ip, int port_number){
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(ip), port_number);
     try{
-        socket_.connect(endpoint);
+        ssl_socket.lowest_layer().connect(endpoint);
+        ssl_socket.handshake(boost::asio::ssl::stream_base::client);
         std::cout << "Connected to server at " << ip << " : " << port_number;
     }
     catch(std::exception& e) {
@@ -58,14 +79,17 @@ void Connection::connect(const std::string& ip, int port_number){
 void Connection::listen(int port_number){
     try{
         boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port_number);
+        
         acceptor_.open(endpoint.protocol());
         acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
         acceptor_.bind(endpoint);
         acceptor_.listen();
         std::cout << "listening on port " << port_number << "...\n";
 
-        acceptor_.accept(socket_);
+        acceptor_.accept(ssl_socket.lowest_layer());
         std::cout << "Client connected!\n";
+
+        ssl_socket.handshake(boost::asio::ssl::stream_base::server);
     }
     catch(std::exception& e){
         std::cerr << "Error while listening: " << e.what() << "\n";
@@ -80,7 +104,7 @@ void Connection::listen(int port_number){
 //write has 3 parameters socket, buffer, error code message
 void Connection::sendMessage(const std::string& message){
     boost::system::error_code ec;
-    boost::asio::write(socket_, boost::asio::buffer(message + "\n"), ec);
+    boost::asio::write(ssl_socket, boost::asio::buffer(message + "\n"), ec);
 
     if (ec){
         std::cerr << "Message failed to send: " << ec.message() << '\n' ;
@@ -105,7 +129,7 @@ void Connection::sendMessage(const std::string& message){
 
 std::string Connection::receiveMessage(){
     boost::asio::streambuf buf;
-    boost::asio::read_until(socket_, buf, "\n");
+    boost::asio::read_until(ssl_socket, buf, "\n");
 
     std::istream input(&buf);
     std::string message;

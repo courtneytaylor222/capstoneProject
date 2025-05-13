@@ -1,3 +1,5 @@
+#pragma once //ensure file is only included once during compilation
+
 #include <boost/asio.hpp>
 //includes the main boot.asio library for networking
 //gives access to classes like io_context, ip::tcp::socket, and ip::tcp::acceptor for TCP/IP communication
@@ -24,8 +26,8 @@ public:
     void listen(int port_number);
     //Used when your app is the server
 
-    boost::asio::ip::tcp::socket& getSocket();
-    //returns the actual socket so other parts of the program (SSL) can use it
+    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>& getSocket();
+    //returns a reference to the underlying SSL socket
 
     void sendMessage(const std::string& message);
     
@@ -39,5 +41,12 @@ private:
     boost::asio::ip::tcp::acceptor acceptor_;
     // socket_ is the communication channel
     //acceptor_ is to accept the incoming connections
+
+
+    //ssl_context manages certificates, keys and SSL setup
+    //ssl_socket wraps a TCP socket and handles encrypted communication
+    boost::asio::ssl::context ssl_context;
+    boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
+
 
 };
