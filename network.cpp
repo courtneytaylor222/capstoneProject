@@ -1,9 +1,13 @@
+#include <openssl/err.h>
+
 #include "network.hpp"
 //brings in the header file with contains the declaration of the Connection class
 //bringing in functions and members
 
 #include <iostream>
 //for cout and cerr
+
+#include "ui.hpp"
 
 //implementing connection class
 //defining the connection constructor
@@ -16,7 +20,11 @@
 //set_options(...): Adds common options to make SSL safer and compatible.
 //use_certificate_chain_file(...): Loads your certificate (cert.pem).
 //use_private_key_file(...): Loads your private key (key.pem) that proves you're the owner of the certificate.
-Connection::Connection(boost::asio::io_context& io_context)
+
+
+
+
+Connection::Connection(boost::asio::io_context& io_context, ConnectionRole role)
     :socket_(io_context),
     acceptor_(io_context) , 
     io_context_(io_context),
@@ -29,8 +37,18 @@ Connection::Connection(boost::asio::io_context& io_context)
         boost::asio::ssl::context::single_dh_use
     );
 
-    ssl_context.use_certificate_chain_file("cert.pem");
-    ssl_context.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
+    //only the server loads the certificate and key
+    if(role == ConnectionRole::Server){
+        ssl_context.use_certificate_chain_file("cert.pem");
+        ssl_context.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
+        ssl_context.use_tmp_dh_file("dh.pem");
+    }
+
+    
+    
+
+    // Disable verification for self-signed certificates
+    ssl_socket.set_verify_mode(boost::asio::ssl::verify_none);
 
 }
 
@@ -56,6 +74,11 @@ void Connection::connect(const std::string& ip, int port_number){
     }
     catch(std::exception& e) {
         std::cerr << "Connection failed: " << e.what() << "\n";
+    }
+
+    unsigned long err;
+    while ((err = ERR_get_error()) != 0) {
+        std::cerr << "OpenSSL error: " << ERR_error_string(err, nullptr) << std::endl;
     }
 }
 
@@ -93,6 +116,11 @@ void Connection::listen(int port_number){
     }
     catch(std::exception& e){
         std::cerr << "Error while listening: " << e.what() << "\n";
+    }
+
+    unsigned long err;
+    while ((err = ERR_get_error()) != 0) {
+        std::cerr << "OpenSSL error: " << ERR_error_string(err, nullptr) << std::endl;
     }
 }
 

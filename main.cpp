@@ -9,7 +9,7 @@
 #include "ui.hpp"
 
 constexpr const char* GREEN = "\033[32m";
-constexpr const char* MAGENTA = "\033[35m";
+constexpr const char* MAGENTA = "\033[35";
 constexpr const char* RESET = "\033[0m";
 
 std::atomic<bool> running(true); 
@@ -60,31 +60,45 @@ int main()
     boost::asio::io_context io_context;
 
     //Step 3: Set-up connection object
-    Connection conn(io_context);
+    Connection conn(io_context, session.getOption() == 1 ? ConnectionRole::Server : ConnectionRole::Client);
 
     //Step 4: Connect based on role
     if (session.getOption() == 1){
         //Server
         conn.listen(session.getPortNumber());
+
+        //receive the client's name first
+        std::string client_name = conn.receiveMessage();
+        session.setClientName(client_name);
+
+        //send server name second
+        conn.sendMessage(session.getServerName());
     } else{
         //client
         std::string ip;
         std::cout << "Enter the IP address to connect (usually 127.0.0.1 for local): ";
         std::cin >> ip;
+
         conn.connect(ip, session.getPortNumber());
+
+        //send client name first
+        conn.sendMessage(session.getClientName());
+        
+        //receive server name second
+        std::string server_name = conn.receiveMessage();
+        session.setServerName(server_name);
     }
 
     //Exchange names between peers
-    std::string myName = (session.getOption() == 1) ? session.getServerName() : session.getClientName();
-    conn.sendMessage (myName + "\n"); //send my name
+    //std::string myName = (session.getOption() == 1) ? session.getServerName() : session.getClientName();
+    //conn.sendMessage (myName + "\n"); //send my name
 
-    std::string peerName = conn.receiveMessage();
-    peerName.erase(peerName.find_last_not_of("\n")+1); //trim newline
-
-    std::cout << "\n Connected with " << peerName << "! Type message below. Type EXIT to quit. \n";
 
     //Start receiver thread.
+    std::string peerName = (session.getOption() == 1) ? session.getClientName() : session.getServerName();
     std::thread receiver(receive_loop, std::ref(conn), peerName);
+
+    std::cout << "\n Connected with " << peerName << "! Type message below. Type EXIT to quit. \n";
 
     //Main thread handles sending
     //will exit loop when user types EXIT
@@ -116,7 +130,7 @@ int main()
         }
 
         
-        conn.sendMessage(outgoingMessage + "\n");
+        conn.sendMessage(outgoingMessage);
 
     }
 
@@ -126,7 +140,7 @@ int main()
     }
 
 
-    //std::cout << "Exiting chat... \n";
+    std::cout << "Chat ended. Goodbye! \n";
 
 
 

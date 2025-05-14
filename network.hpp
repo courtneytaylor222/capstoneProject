@@ -10,11 +10,17 @@
 
 #include <string>
 
+
+
+enum class ConnectionRole{ Server, Client };
+
+
 class Connection{
 //functions will be called by other parts of the program eg main()    
 public:
+
     // Constructor
-    Connection(boost::asio::io_context& io_context);
+    Connection(boost::asio::io_context& io_context, ConnectionRole role);
     
 
     //Connect to a peer (client-side)
