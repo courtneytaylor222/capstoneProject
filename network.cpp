@@ -9,6 +9,12 @@
 
 #include "ui.hpp"
 
+#include <boost/asio/ssl/context.hpp>
+
+#include <openssl/ssl.h>
+
+#include <memory> //for std unique_ptr
+
 //implementing connection class
 //defining the connection constructor
 //initialisation list
@@ -28,8 +34,11 @@ Connection::Connection(boost::asio::io_context& io_context, ConnectionRole role)
     :socket_(io_context),
     acceptor_(io_context) , 
     io_context_(io_context),
-    ssl_context(boost::asio::ssl::context::tlsv12),
-    ssl_socket(io_context, ssl_context)
+    ssl_context(
+        role == ConnectionRole::Server
+            ? boost::asio::ssl::context::tlsv12_server
+            : boost::asio::ssl::context::tlsv12_client)
+    //ssl_socket(io_context, ssl_context) originally here, too early
 {
     ssl_context.set_options(
         boost::asio::ssl::context::default_workarounds |
@@ -37,26 +46,41 @@ Connection::Connection(boost::asio::io_context& io_context, ConnectionRole role)
         boost::asio::ssl::context::single_dh_use
     );
 
+
+    //ssl_context.set_ciphersuites("TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256");
+
     //only the server loads the certificate and key
     if(role == ConnectionRole::Server){
-        ssl_context.use_certificate_chain_file("cert.pem");
-        ssl_context.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
-        ssl_context.use_tmp_dh_file("dh.pem");
+
+        ssl_context.use_certificate_chain_file("rsacert.pem");
+        ssl_context.use_private_key_file("rsakey.pem", boost::asio::ssl::context::pem);
+
+
+        //ssl_context.use_certificate_chain_file("cert.pem");
+        //ssl_context.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
+        //ssl_context.use_tmp_dh_file("dh.pem");
     }
 
-    
+    // Set cipher list using native_handle and OpenSSL API
+    if (SSL_CTX_set_cipher_list(ssl_context.native_handle(),
+        "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA:AES128-SHA") != 1)
+    {
+        std::cerr << "Error setting cipher list!" << std::endl;
+    }
+
+    ssl_socket = std::make_unique<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>(io_context, ssl_context);
     
 
     // Disable verification for self-signed certificates
-    ssl_socket.set_verify_mode(boost::asio::ssl::verify_none);
-
+    //ssl_socket.set_verify_mode(boost::asio::ssl::verify_none);
+    ssl_socket->set_verify_mode(boost::asio::ssl::verify_none);
 }
 
     //constructor body (if needed) can go here
 
     //getter for the socket
 boost::asio::ssl::stream<boost::asio::ip::tcp::socket>& Connection::getSocket(){
-    return ssl_socket;
+    return *ssl_socket;
 }
 
 //connect() implementation, member function of Connection class
@@ -68,8 +92,8 @@ boost::asio::ssl::stream<boost::asio::ip::tcp::socket>& Connection::getSocket(){
 void Connection::connect(const std::string& ip, int port_number){
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(ip), port_number);
     try{
-        ssl_socket.lowest_layer().connect(endpoint);
-        ssl_socket.handshake(boost::asio::ssl::stream_base::client);
+        ssl_socket->lowest_layer().connect(endpoint);
+        ssl_socket->handshake(boost::asio::ssl::stream_base::client);
         std::cout << "Connected to server at " << ip << " : " << port_number;
     }
     catch(std::exception& e) {
@@ -109,10 +133,10 @@ void Connection::listen(int port_number){
         acceptor_.listen();
         std::cout << "listening on port " << port_number << "...\n";
 
-        acceptor_.accept(ssl_socket.lowest_layer());
+        acceptor_.accept(ssl_socket->lowest_layer());
         std::cout << "Client connected!\n";
 
-        ssl_socket.handshake(boost::asio::ssl::stream_base::server);
+        ssl_socket->handshake(boost::asio::ssl::stream_base::server);
     }
     catch(std::exception& e){
         std::cerr << "Error while listening: " << e.what() << "\n";
@@ -132,7 +156,7 @@ void Connection::listen(int port_number){
 //write has 3 parameters socket, buffer, error code message
 void Connection::sendMessage(const std::string& message){
     boost::system::error_code ec;
-    boost::asio::write(ssl_socket, boost::asio::buffer(message + "\n"), ec);
+    boost::asio::write(*ssl_socket, boost::asio::buffer(message + "\n"), ec);
 
     if (ec){
         std::cerr << "Message failed to send: " << ec.message() << '\n' ;
@@ -157,7 +181,7 @@ void Connection::sendMessage(const std::string& message){
 
 std::string Connection::receiveMessage(){
     boost::asio::streambuf buf;
-    boost::asio::read_until(ssl_socket, buf, "\n");
+    boost::asio::read_until(*ssl_socket, buf, "\n");
 
     std::istream input(&buf);
     std::string message;

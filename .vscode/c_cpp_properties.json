@@ -5,8 +5,8 @@
       "includePath": [
         "${workspaceFolder}/**",
         "/usr/local/opt/boost/include",
-        "/usr/local/opt/openssl@3/include/openssl",
-        "/usr/local/opt/openssl@3/include/",
+        "/usr/local/opt/openssl@3.0/include/openssl",
+        "/usr/local/opt/openssl@3.0/include/",
         "${workspaceFolder}"
       ],
       "defines":[],

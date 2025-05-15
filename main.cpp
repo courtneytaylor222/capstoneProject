@@ -9,7 +9,7 @@
 #include "ui.hpp"
 
 constexpr const char* GREEN = "\033[32m";
-constexpr const char* MAGENTA = "\033[35";
+constexpr const char* MAGENTA = "\033[35m";
 constexpr const char* RESET = "\033[0m";
 
 std::atomic<bool> running(true); 

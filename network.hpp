@@ -10,7 +10,7 @@
 
 #include <string>
 
-
+#include <memory>
 
 enum class ConnectionRole{ Server, Client };
 
@@ -52,7 +52,7 @@ private:
     //ssl_context manages certificates, keys and SSL setup
     //ssl_socket wraps a TCP socket and handles encrypted communication
     boost::asio::ssl::context ssl_context;
-    boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
+    std::unique_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ssl_socket;
 
 
 };
