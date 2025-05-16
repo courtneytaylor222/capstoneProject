@@ -1,34 +1,11 @@
 #include <openssl/err.h>
-
-#include "network.hpp"
-//brings in the header file with contains the declaration of the Connection class
-//bringing in functions and members
-
-#include <iostream>
-//for cout and cerr
-
-#include "ui.hpp"
-
+//handling and reporting OpenSSL errors, ERR_get_error(), check and print any OpenSSL errors after connection or handshake attempts.
+#include "network.hpp" //includes header file
+#include <iostream> //for cout and cerr
 #include <boost/asio/ssl/context.hpp>
-
-#include <openssl/ssl.h>
-
+//Boost.Asio ssl::context class, which is used to configure SSL settings (protocol, certificates, etc.) for secure sockets
+#include <openssl/ssl.h> //used for SSL_CTX_set_cipher_list()
 #include <memory> //for std unique_ptr
-
-//implementing connection class
-//defining the connection constructor
-//initialisation list
-//passing io_context by reference as it must be managed outside the class
-//initialising a socket using same io context
-//acceptor using same io context
-//ssl_context_(...): Chooses TLS version (v1.2 here).
-//ssl_socket_(...): Creates a socket that uses this SSL context.
-//set_options(...): Adds common options to make SSL safer and compatible.
-//use_certificate_chain_file(...): Loads your certificate (cert.pem).
-//use_private_key_file(...): Loads your private key (key.pem) that proves you're the owner of the certificate.
-
-
-
 
 Connection::Connection(boost::asio::io_context& io_context, ConnectionRole role)
     :socket_(io_context),
@@ -46,19 +23,10 @@ Connection::Connection(boost::asio::io_context& io_context, ConnectionRole role)
         boost::asio::ssl::context::single_dh_use
     );
 
-
-    //ssl_context.set_ciphersuites("TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256");
-
     //only the server loads the certificate and key
     if(role == ConnectionRole::Server){
-
         ssl_context.use_certificate_chain_file("rsacert.pem");
         ssl_context.use_private_key_file("rsakey.pem", boost::asio::ssl::context::pem);
-
-
-        //ssl_context.use_certificate_chain_file("cert.pem");
-        //ssl_context.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
-        //ssl_context.use_tmp_dh_file("dh.pem");
     }
 
     // Set cipher list using native_handle and OpenSSL API
@@ -69,24 +37,16 @@ Connection::Connection(boost::asio::io_context& io_context, ConnectionRole role)
     }
 
     ssl_socket = std::make_unique<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>(io_context, ssl_context);
-    
 
     // Disable verification for self-signed certificates
-    //ssl_socket.set_verify_mode(boost::asio::ssl::verify_none);
     ssl_socket->set_verify_mode(boost::asio::ssl::verify_none);
 }
 
-    //constructor body (if needed) can go here
-
-    //getter for the socket
+//getter for the socket
 boost::asio::ssl::stream<boost::asio::ip::tcp::socket>& Connection::getSocket(){
     return *ssl_socket;
 }
 
-//connect() implementation, member function of Connection class
-//create an endpoint object to specificy where to connect with ip and port number
-//make_address(ip) converts 127.0.0.1 into an address object boost.asio can use
-//client and server use same point number
 //try to connect client socket to endpoint
 //throw expection if server isn't running or IP/port is wrong with error message
 void Connection::connect(const std::string& ip, int port_number){
@@ -106,23 +66,7 @@ void Connection::connect(const std::string& ip, int port_number){
     }
 }
 
-//listen() implementation, member function of connection class.
-//Server listen doesn't need IP and it uses all availables IPs by default
-//listens on a specific port
-//tcp::v4() tells boost to listen for IPv4 connections
-//endpoint(listen for IPv4 connections - the protocol, on this specific port)
-//opens the acceptor socket, allocates resources for the socket and configures it with the protocol specified by endpoint
-//re-use address is useful as it allows the server to quickly rebind to a port recently used
-//without this option, attempting to restart a server immediately after shutdown can result in 'address already in use' error
-//OS prevents rebinding to the port until all previous connections are closed
-//improves restart times and reliability
-//then bind acceptor to the endpoint
-//then listen for incoming TCP connection requests
-//print listening message to the console
-//program stops here until the client connects
-//accept(socket_) accepts the connection into the socket
-
-
+//Server listens on a specific port, accepts connection requests and performs a handshake.
 void Connection::listen(int port_number){
     try{
         boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port_number);
@@ -148,12 +92,8 @@ void Connection::listen(int port_number){
     }
 }
 
-//send message implementation passing the message by const reference
-//declare a boost error code object called ec
-//if an error occurs during the send the object will hold the error info
-//This avoids throwing exceptions and is used to check for success/failed manually
-//write() is a blocking function for synchronous operations
-//write has 3 parameters socket, buffer, error code message
+
+//write() is a blocking function for synchronous operations.
 void Connection::sendMessage(const std::string& message){
     boost::system::error_code ec;
     boost::asio::write(*ssl_socket, boost::asio::buffer(message + "\n"), ec);
@@ -163,22 +103,7 @@ void Connection::sendMessage(const std::string& message){
     }
 }
 
-//receive message implementation returning a string, which will be the message received from the peer
-//it's expected to use the socket_ already connected
-//create a stream buffer named buf
-//read from the socket into the buffer until it sees a newline character
-//it's a blocking call - it will wait until a complete message is receive
-//buf is where the received data will go
-//attach the buffer to an input stream using istream input
-//create an input stream that reads from the buffer
-//use istream so that we can now easily use things like std::getline() to extract a line of text
-//extract the message
-//getline reads a full line up to and not including the \n from the input stream into the message string
-//the \n that was read from the socket is discarded
-//now message holds the full message sent by the peer
-//the function returns the string so it can be displayed or processed by other parts of the program
-//summary: message comes through the socket, place in a buffer, read it with the stream, message handed as a string
-
+//The message comes through the socket, placed in a buffer, read it with the stream, message handed as a string.
 std::string Connection::receiveMessage(){
     boost::asio::streambuf buf;
     boost::asio::read_until(*ssl_socket, buf, "\n");
@@ -188,17 +113,3 @@ std::string Connection::receiveMessage(){
     std::getline(input, message);
     return message;
 }
-
-
-
-//taking IP and port number as parameters
-
-//void Connection::connect(const std::string& ip, int port_number){
-    //boost::asio::ip::tcp::resolver resolver(io_context_);
-    //creates a resolver object which is used to turn human-readable IP and port (like 127.0.0.1) into a machine-usable format called an endpoint
-    //a resolver looks up IPs and gives you real addresses to connect to
-    //resolver is a local variable in the function connect
-
-
-
-//}

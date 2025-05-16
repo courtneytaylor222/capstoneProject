@@ -1,9 +1,7 @@
 
 #pragma once
-
 #include <string>
 #include <iostream>
-
 
 class ChatSession {
 private:
@@ -35,7 +33,6 @@ public:
     }
 
     //getters for port number and option 
-
     int getOption() const{
         return option;
     }
@@ -44,18 +41,10 @@ public:
         return port_number;
     }
 
-    //setter for port number, in case you want to update later
+    //setter for port number
     void setPortNumber(int port){
         port_number = port;
     }
-
-    //Method to display message in the format "Name: message"
-    void displayMessage(const std::string& message) const{
-        std::string sender = (option == 1) ? server_name : client_name;
-        std::cout << sender << ": " << message << '\n';
-    }
-
-
 };
 
 //Function that handles the menu and returns a filled ChatSession

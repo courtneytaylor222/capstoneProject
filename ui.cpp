@@ -1,9 +1,9 @@
 #include "ui.hpp"
 #include <iostream>
 #include <string>
-#include <cstdlib>
-#include <sstream>
-#include <limits>
+#include <cstdlib> //for std::exit
+#include <sstream> //for std::stringstream
+#include <limits> //for std::numeric_limits
 
 ChatSession menu(){
     std::cout << "Welcome to myChat!" << '\n';
@@ -15,18 +15,8 @@ ChatSession menu(){
     
     std::string input;
     std::cin >> input;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    //cin.ignore(...) means ignore this thing in the input buffer
-    // first parameter is the number of characters to ignore
-    // ignore up to and including the second parameter is the delimeter character you specify
-    //std::numeric_limits<> ::max() gives the largest possible value of the data type
-    // std::streamsize type used by streams to represent sizes, a signed integer type
-    // this means Ignore up to the maximum possible number of characters — effectively, everything in the input buffer.
-    //up to and including the \n
-    //if getLine() was used, it wouldn't return and empty string
-
-    //Handles exit command
-    //HELPER FUNCTION???????
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); //clearing input buffer
+    
     if (input == "EXIT" || input == "exit"){
         std::cout << "Exiting program... \n";
         std::exit(0);
@@ -34,23 +24,12 @@ ChatSession menu(){
     //continues with following code if input is not exit
 
     int option;
-    // initialising
-
     std::stringstream ss(input); 
-    //allows you to treat a string like input and extract values from it
-    //ie is it 1 or 2 or something else like "Hello"?
-    //it creates a stringstream object named ss and it initialises it with the content of the input
-    //eg if the input was 2 then ss.str() == "2"
-
     ss >> option;
-    // >> is the stream extraction operator and when used with a stream it reads data from the stream and assigns to the provided variable
-    // if data in ss can be converted into the int option, the extraction will succeed.
-    //if data cannot be converted (the user wrote words) the stream will enter a failed state
+    //convert string input to an integer and setting option equal to the integer
 
     bool validConversionOption = !ss.fail();
-    //checking state of ss using fail(), will equal true if it failed
-    //!ss.fail() will be false if it failed
-    //set bool equal to T or F - ie did it work? false if no 
+    //checking if the conversion succeeded
 
     if (!validConversionOption || (option != 1 && option != 2)) {
         std::cout << "Invalid input. Exiting...\n";
@@ -91,12 +70,12 @@ ChatSession menu(){
 
     if (option ==1){
         session.setServerName(name);
+        std::cout << "Awaiting connection from peer..." << '\n';
     }
     else {
         session.setClientName(name);
     
     }
-    std::cout << "Awaiting connection from peer..." << '\n';
 
     return session;
 }

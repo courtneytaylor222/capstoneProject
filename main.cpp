@@ -8,7 +8,6 @@
 #include "network.hpp"
 #include "ui.hpp"
 
-constexpr const char* GREEN = "\033[32m";
 constexpr const char* MAGENTA = "\033[35m";
 constexpr const char* RESET = "\033[0m";
 
@@ -19,7 +18,7 @@ void receive_loop(Connection& conn, const std::string& peerName){
         while(running){
             std::string incoming = conn.receiveMessage();
             if (incoming =="EXIT" || incoming == "exit"){
-                std::cout << "\n" << peerName << " has left the chat. Type EXIT to leave chat too. \n";
+                std::cout << "\n" << peerName << " has left the chat. Both peers must type EXIT for the connection to close. \n";
                 running = false;
                 break;
             }
@@ -31,25 +30,6 @@ void receive_loop(Connection& conn, const std::string& peerName){
         running = false;
     }
 }
-
-/* void send_messages(boost::asio::ip::tcp::socket& socket_){
-    try{
-        std::string message;
-        while(connected){
-            std::cout << "You: ";
-            std::getLine(std::cin, message);
-            if(message == "EXIT" || message == "exit"){
-                socket.close();
-                connected = false;
-                break;
-            }
-            boost::asio::write(socket, boost::asio::buffer(message));
-        }
-    }catch(std::exception& e){
-        std::cerr << "Error while sending: " << e.what() <<"\n";
-    }
-} */
-
 
 int main()
 {
@@ -89,11 +69,6 @@ int main()
         session.setServerName(server_name);
     }
 
-    //Exchange names between peers
-    //std::string myName = (session.getOption() == 1) ? session.getServerName() : session.getClientName();
-    //conn.sendMessage (myName + "\n"); //send my name
-
-
     //Start receiver thread.
     std::string peerName = (session.getOption() == 1) ? session.getClientName() : session.getServerName();
     std::thread receiver(receive_loop, std::ref(conn), peerName);
@@ -101,8 +76,6 @@ int main()
     std::cout << "\n Connected with " << peerName << "! Type message below. Type EXIT to quit. \n";
 
     //Main thread handles sending
-    //will exit loop when user types EXIT
-
     while (running){
         //Outgoing message
         std::string outgoingMessage;
