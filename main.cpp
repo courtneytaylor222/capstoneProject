@@ -23,7 +23,6 @@ void receive_loop(Connection& conn, const std::string& peerName){
                 break;
             }
             std::cout << MAGENTA << peerName << ": " << incoming << RESET << std::endl;
-            
         }
     } catch (std::exception& e){
         std::cerr << "Error: " << e.what() << std::endl;
@@ -85,19 +84,6 @@ int main()
         if (outgoingMessage == "EXIT" || outgoingMessage == "exit"){
             std::cout << "Exiting chat... \n";
             conn.sendMessage("EXIT\n");
-
-            boost::system::error_code ec;
-
-            conn.getSocket().shutdown(ec);
-            if(ec){
-                std::cerr << "SSL shutdown failed: " << ec.what() << std::endl;
-            }
-            
-            conn.getSocket().lowest_layer().close(ec);
-            if(ec){
-                std::cerr << "Socket close failed: " << ec.what() << std::endl;
-            }
-
             running = false;
             break;
         }
