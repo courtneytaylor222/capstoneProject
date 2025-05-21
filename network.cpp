@@ -54,7 +54,7 @@ void Connection::connect(const std::string& ip, int port_number){
     try{
         ssl_socket->lowest_layer().connect(endpoint);
         ssl_socket->handshake(boost::asio::ssl::stream_base::client);
-        std::cout << "Connected to server at " << ip << " : " << port_number;
+        std::cout << "SSL handshake complete. The following chat will be encrypted. Connected to server at " << ip << " : " << port_number;
     }
     catch(std::exception& e) {
         std::cerr << "Connection failed: " << e.what() << "\n";
@@ -78,7 +78,7 @@ void Connection::listen(int port_number){
         std::cout << "listening on port " << port_number << "...\n";
 
         acceptor_.accept(ssl_socket->lowest_layer());
-        std::cout << "Client connected!\n";
+        std::cout << "SSL handshake complete. The following chat will be encrypted. Client connected!\n";
 
         ssl_socket->handshake(boost::asio::ssl::stream_base::server);
     }

@@ -70,6 +70,7 @@ int main()
 
     //Start receiver thread.
     std::string peerName = (session.getOption() == 1) ? session.getClientName() : session.getServerName();
+    
     std::thread receiver(receive_loop, std::ref(conn), peerName);
 
     std::cout << "\n Connected with " << peerName << "! Type message below. Type EXIT to quit. \n";
@@ -87,7 +88,6 @@ int main()
             running = false;
             break;
         }
-
         
         conn.sendMessage(outgoingMessage);
 
@@ -98,10 +98,6 @@ int main()
         receiver.join();
     }
 
-
     std::cout << "Chat ended. Goodbye! \n";
-
-
-
     return 0;
 }
